@@ -1,5 +1,6 @@
 import json
 import os
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,20 +41,61 @@ def ensure_has_keys(row: Dict[str, Any], keys: List[str]) -> bool:
 
 def _sanitize_annotator_id(annotator_id: str) -> str:
     # Keep filesystem-safe, stable identifiers.
-    return annotator_id.strip().replace(os.sep, "_").replace(":", "_") or "anonymous"
+    cleaned = annotator_id.strip().replace(os.sep, "_").replace(":", "_") or "anonymous"
+    # Keep directory name within safe limits (Windows component length).
+    return cleaned[:80]
 
 
 def src_labels_path(root: Path, source_jsonl_path: Path, annotator_id: str) -> Path:
     # Keep human labels per source file and per annotator (to avoid collisions).
     rel = source_jsonl_path.relative_to(root)
-    safe = str(rel).replace(os.sep, "__").replace(":", "")
     annotator_safe = _sanitize_annotator_id(annotator_id)
+
+    # Windows path length limits can be hit if we embed the entire `rel` into the filename.
+    # Use a stable short hash so the filename stays within safe limits.
+    rel_str = str(rel)
+    rel_hash = hashlib.sha1(rel_str.encode("utf-8")).hexdigest()[:12]
+
+    # Backward-compat: if the old naming scheme already exists on disk,
+    # prefer it so we don't lose previously saved labels.
+    try:
+        legacy_safe = rel_str.replace(os.sep, "__").replace(":", "")
+        legacy_path = (
+            root
+            / "streamlit_hazard_correct_labeler"
+            / "human_labels"
+            / annotator_safe
+            / f"{legacy_safe}__labels.jsonl"
+        )
+        if legacy_path.exists():
+            return legacy_path
+    except OSError:
+        # Path might be too long for Windows; fall back to hashed filename.
+        pass
+
+    # Keep a small readable prefix (last component), but truncate to be safe.
+    name_prefix = rel.name
+    # Remove characters that can be invalid on Windows filenames.
+    name_prefix = (
+        name_prefix.replace(":", "")
+        .replace("\\", "_")
+        .replace("/", "_")
+        .replace("?", "")
+        .replace("*", "")
+        .replace('"', "")
+        .replace("<", "")
+        .replace(">", "")
+        .replace("|", "")
+    )
+    name_prefix = name_prefix[:60] if len(name_prefix) > 60 else name_prefix
+
+    filename = f"{name_prefix}__{rel_hash}__labels.jsonl"
     return (
         root
         / "streamlit_hazard_correct_labeler"
         / "human_labels"
         / annotator_safe
-        / f"{safe}__labels.jsonl"
+        / filename
     )
 
 
@@ -138,7 +180,11 @@ def to_item(row: Dict[str, Any]) -> Item:
 def main() -> None:
     st.set_page_config(page_title="Hazard Correct Labeler", layout="wide")
 
-    default_root = Path(os.environ.get("WORKSPACE_ROOT", "/home/dongwook/EMBGuard_outputs/web")).resolve()
+    # Workspace root:
+    # - Prefer `WORKSPACE_ROOT` env var if provided
+    # - Otherwise infer from this file location (…/web/streamlit_hazard_correct_labeler/app.py -> …/web)
+    inferred_default_root = Path(__file__).resolve().parents[1]
+    default_root = Path(os.environ.get("WORKSPACE_ROOT", str(inferred_default_root))).resolve()
     try:
         workspace_root = st.secrets.get("WORKSPACE_ROOT", None)
     except StreamlitSecretNotFoundError:
