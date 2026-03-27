@@ -33,6 +33,17 @@ def load_jsonl(path: Path) -> List[Dict[str, Any]]:
     return rows
 
 
+def load_random_subset_json(root: Path) -> List[Dict[str, Any]]:
+    subset_path = root / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples.json"
+    if not subset_path.exists():
+        raise FileNotFoundError(f"Subset file not found: {subset_path}")
+    with subset_path.open("r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        raise ValueError("Subset JSON should be a list.")
+    return [row for row in data if isinstance(row, dict)]
+
+
 def ensure_has_keys(row: Dict[str, Any], keys: List[str]) -> bool:
     for k in keys:
         if k not in row:
@@ -290,6 +301,11 @@ def main() -> None:
 
     annotator_id = st.text_input("annotator_id", value=os.environ.get("ANNOTATOR_ID", "annotator_1"))
     note = st.text_input("Optional note (applied to all saved rows)", value="")
+    use_random_subset = st.checkbox(
+        "Use random 100 subset (`data/random_100_samples.json`)",
+        value=False,
+        help="켜면 전체 대신 고정 랜덤 100개만 라벨링합니다.",
+    )
     overwrite_source = st.checkbox(
         "Overwrite source JSONL (hazard_correct)  [optional]",
         value=False,
@@ -303,23 +319,55 @@ def main() -> None:
 
     required = ["idx", "groundtruth_hazard", "hazard_correct"]
 
-    # Load all rows once.
+    # Load rows once (all rows or fixed random 100 subset).
     all_items: List[Tuple[Path, Item]] = []  # (source_jsonl_path, item)
     invalid_counts = 0
-    for source_jsonl_path in files:
-        rows = load_jsonl(source_jsonl_path)
-        valid_rows = [r for r in rows if ensure_has_keys(r, required)]
-        invalid_counts += len(rows) - len(valid_rows)
-        if not valid_rows:
-            continue
-        for r in valid_rows:
-            all_items.append((source_jsonl_path, to_item(r)))
+    if use_random_subset:
+        try:
+            subset_rows = load_random_subset_json(root)
+        except (FileNotFoundError, ValueError) as e:
+            st.error(str(e))
+            return
+
+        for row in subset_rows:
+            rel = str(row.get("source_jsonl_path", "")).strip()
+            if not rel:
+                invalid_counts += 1
+                continue
+            source_jsonl_path = (root / rel).resolve()
+            if source_jsonl_path not in files:
+                invalid_counts += 1
+                continue
+
+            subset_item = {
+                "idx": row.get("idx"),
+                "groundtruth_hazard": row.get("groundtruth_hazard"),
+                "hazard_correct": False,
+                "response_hazard": row.get("response_hazard"),
+            }
+            if not ensure_has_keys(subset_item, required):
+                invalid_counts += 1
+                continue
+            try:
+                all_items.append((source_jsonl_path, to_item(subset_item)))
+            except (TypeError, ValueError):
+                invalid_counts += 1
+    else:
+        for source_jsonl_path in files:
+            rows = load_jsonl(source_jsonl_path)
+            valid_rows = [r for r in rows if ensure_has_keys(r, required)]
+            invalid_counts += len(rows) - len(valid_rows)
+            if not valid_rows:
+                continue
+            for r in valid_rows:
+                all_items.append((source_jsonl_path, to_item(r)))
 
     if not all_items:
         st.error("No valid rows found (required keys: idx, groundtruth_hazard, hazard_correct).")
         return
 
-    st.info(f"Loaded {len(all_items)} rows. Invalid/skipped rows: {invalid_counts}.")
+    mode_text = "random subset (100)" if use_random_subset else "full dataset"
+    st.info(f"Loaded {len(all_items)} rows ({mode_text}). Invalid/skipped rows: {invalid_counts}.")
 
     # Load existing human labels per source file (per annotator).
     annotator_safe = _sanitize_annotator_id(annotator_id)
