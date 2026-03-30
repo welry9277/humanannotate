@@ -1,0 +1,23 @@
+{
+  "gold_path": "C:\\Users\\User\\web\\streamlit_hazard_correct_labeler\\data\\random_100_samples_v2_with_hazard_correct.json",
+  "human_paths": {
+    "jeongju": "C:\\Users\\User\\web\\human\\human_labels_jeongju.json",
+    "bogyung": "C:\\Users\\User\\web\\human\\human_labels_bogyung.json",
+    "dongwook": "C:\\Users\\User\\web\\human\\human_labels_dongwook.json"
+  },
+  "majority_rule": {
+    "n_annotators": 3,
+    "pred_rule": "binary majority (>=2 True votes wins)"
+  },
+  "metrics": {
+    "all3": {
+      "n": 100,
+      "accuracy": 0.95,
+      "kappa": 0.8999999999999999,
+      "pred_pos_rate": 0.55,
+      "true_pos_rate": 0.5,
+      "p_o": 0.95,
+      "p_e": 0.5
+    }
+  }
+}

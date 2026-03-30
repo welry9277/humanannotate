@@ -1,0 +1,19 @@
+{
+  "human_paths": {
+    "bogyung": "C:\\Users\\User\\web\\human\\human_labels_bogyung.json",
+    "minwoo": "C:\\Users\\User\\web\\human\\human_labels_minwoo.json",
+    "dongwook": "C:\\Users\\User\\web\\human\\human_labels_dongwook.json"
+  },
+  "common_item_count_all3": 100,
+  "fleiss_kappa_all3_items": {
+    "n_items": 100,
+    "n_raters": 3,
+    "kappa": 0.6637374461979914,
+    "p_bar": 0.8333333333333333,
+    "p_e": 0.5043555555555554,
+    "category_proportions": {
+      "false": 0.4533333333333333,
+      "true": 0.5466666666666666
+    }
+  }
+}
