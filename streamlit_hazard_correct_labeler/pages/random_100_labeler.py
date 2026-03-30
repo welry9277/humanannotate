@@ -31,7 +31,7 @@ def _resolve_root() -> Path:
 
 
 def _load_random_subset(root: Path) -> List[Dict[str, Any]]:
-    subset_path = root / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples.json"
+    subset_path = root / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples_v2.json"
     if not subset_path.exists():
         raise FileNotFoundError(f"Subset file not found: {subset_path}")
     with subset_path.open("r", encoding="utf-8") as f:
@@ -52,7 +52,7 @@ def main() -> None:
     db_cfg = _supabase_config()
 
     st.title("Hazard Correct Labeler (Random 100)")
-    st.caption("고정 랜덤 100개 샘플만 라벨링합니다. (`data/random_100_samples.json` 기반)")
+    st.caption("고정 랜덤 100개 샘플만 라벨링합니다. (`data/random_100_samples_v2.json` 기반)")
 
     annotator_id = st.text_input("annotator_id", value=os.environ.get("ANNOTATOR_ID", "annotator_1"))
     note = st.text_input("Optional note (applied to all saved rows)", value="")
@@ -74,7 +74,7 @@ def main() -> None:
         subset_items.append((root / rel, row))
 
     if not subset_items:
-        st.error("No valid rows in random_100_samples.json")
+        st.error("No valid rows in random_100_samples_v2.json")
         return
 
     labels_by_source_path: Dict[Path, Dict[int, Dict[str, Any]]] = {}
