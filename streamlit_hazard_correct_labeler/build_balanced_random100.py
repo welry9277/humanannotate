@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 WORKSPACE = Path(__file__).resolve().parents[1]
-SAMPLING_ROOT = WORKSPACE / "Sampling_aligned_triplets"
-OUT_PATH = WORKSPACE / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples.json"
+SAMPLING_ROOT = WORKSPACE / "Sampling_aligned_triplets_v2"
+OUT_PATH = WORKSPACE / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples_v2.json"
 
 SEED = 42
 TARGET_TOTAL = 100

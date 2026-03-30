@@ -16,7 +16,7 @@ def _now_utc_iso() -> str:
 
 
 def find_aligned_jsonl_files(root: Path) -> List[Path]:
-    aligned_root = root / "Sampling_aligned_triplets"
+    aligned_root = root / "Sampling_aligned_triplets_v2"
     if not aligned_root.exists():
         return []
     return sorted(aligned_root.rglob("*.jsonl"))
@@ -34,7 +34,7 @@ def load_jsonl(path: Path) -> List[Dict[str, Any]]:
 
 
 def load_random_subset_json(root: Path) -> List[Dict[str, Any]]:
-    subset_path = root / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples.json"
+    subset_path = root / "streamlit_hazard_correct_labeler" / "data" / "random_100_samples_v2.json"
     if not subset_path.exists():
         raise FileNotFoundError(f"Subset file not found: {subset_path}")
     with subset_path.open("r", encoding="utf-8") as f:
