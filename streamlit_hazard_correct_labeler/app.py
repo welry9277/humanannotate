@@ -302,7 +302,7 @@ def main() -> None:
     annotator_id = st.text_input("annotator_id", value=os.environ.get("ANNOTATOR_ID", "annotator_1"))
     note = st.text_input("Optional note (applied to all saved rows)", value="")
     use_random_subset = st.checkbox(
-        "Use random 100 subset (`data/random_100_samples.json`)",
+        "Use random 100 subset (`data/random_100_samples_v2.json`)",
         value=False,
         help="켜면 전체 대신 고정 랜덤 100개만 라벨링합니다.",
     )
